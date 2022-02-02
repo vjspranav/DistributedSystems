@@ -67,11 +67,6 @@ tuple<int, int, int, int> get_4cliques(int edge1[], int edge2[])
 
 int main( int argc, char **argv ) {
     int rank, numprocs, chunk_size;
-
-    // create MPI datatype of tuple<int, int, int>
-    MPI_Datatype tuple_type;
-    MPI_Datatype types[3] = {MPI_INT, MPI_INT, MPI_INT};
-    MPI_Type_create_struct(3, block_lengths, offsets, types, &tuple_type);
  
     ifstream in_file;
     ofstream out_file;
@@ -95,7 +90,8 @@ int main( int argc, char **argv ) {
     for(int i = 0; i < num_edges; i++)
         edges[i] = (int *) malloc(3 * sizeof(int));
     
-    vector <tuple<int, int, int>> edges3;
+    vector <int> edges3;
+    set<tuple<int, int, int> > cliques3;
 
     // new int *[num_edges];
     // for (int i = 0; i < num_edges; ++i)
@@ -137,7 +133,7 @@ int main( int argc, char **argv ) {
     // get current process rank
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-    vector <tuple<int, int, int>> edges3_p;
+    vector <int> edges3_p;
     if(rank==0){
         chunk_size = num_edges/numprocs > 4 ? num_edges/numprocs : 4;
     }
@@ -174,7 +170,6 @@ int main( int argc, char **argv ) {
                         if (cliques3_edges.count(clique_3) == 0)
                         {
                             cliques3_edges.insert(clique_3);
-                            edges3_p.push_back(clique_3);
                             three_cliques[weights[edge_weight_index] + weights[i] + weights[j]]++;
                             weights3[num_3] = weights[edge_weight_index] + weights[i] + weights[j];
                             num_3++;
@@ -187,7 +182,10 @@ int main( int argc, char **argv ) {
         for (auto x : cliques3_edges)
         {
             tuple<int, int, int> tp = x;
-            cout << get<0>(tp) << ' ' << get<1>(tp) << ' ' << get<2>(tp) << '\n';
+            edges3_p.push_back(get<0>(tp));
+            edges3_p.push_back(get<1>(tp));
+            edges3_p.push_back(get<2>(tp));
+            // cout << get<0>(tp) << ' ' << get<1>(tp) << ' ' << get<2>(tp) << '\n';
         }
         // num_3 = 0;
 
@@ -201,11 +199,11 @@ int main( int argc, char **argv ) {
         //     num_3++;
         // }
         // Print from edges3_p
-        cout << "Vectors: " << endl;
-        for (int i = 0; i < num_3; i++)
-        {
-            cout << get<0>(edges3_p[i]) << ' ' << get<1>(edges3_p[i]) << ' ' << get<2>(edges3_p[i]) << '\n';
-        }
+        // cout << "Vectors: " << endl;
+        // for (int i = 0; i < num_3*3; i+=3)
+        // {
+        //     cout << edges3_p[i] << ' ' << edges3_p[i+1] << ' ' << edges3_p[i+2] << '\n';
+        // }
     }else{
         num_3 = 0;
         cout << "Not enough edges for process: " << rank << endl;
@@ -224,6 +222,7 @@ int main( int argc, char **argv ) {
     MPI_Gather(&num_3, 1, MPI_INT, counts, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if(rank==0){
         for(int i=0;i<numprocs;i++){
+            counts[i] = counts[i] * 3;
             cout << "Process: " << i << " has " << counts[i] << " counts" << endl;
         }
     }
@@ -235,13 +234,20 @@ int main( int argc, char **argv ) {
         for(int i=0;i<numprocs;i++){
             cout << "Process: " << i << " has " << disps[i] << " start point" << endl;
         }
-        edges3 = vector<tuple<int, int, int> >(disps[numprocs - 1] + counts[numprocs - 1]);
+        edges3 = vector<int>(disps[numprocs - 1] + counts[numprocs - 1]);
     }
-    MPI_Gatherv(edges3_p.data(), num_3, tuple_type, edges3.data(), counts, disps, tuple_type, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(&edges3_p.front(), edges3_p.size(), MPI_INT, &edges3.front(), counts, disps, MPI_INT, 0, MPI_COMM_WORLD);
     if(rank==0){
-        for (int i = 0; i < total_num_3; i++)
+        cout << "Here: " << edges3.size() << endl;
+        for (int i = 0; i < total_num_3*3; i+=3)
         {
-            cout << get<0>(edges3[i]) << ' ' << get<1>(edges3[i]) << ' ' << get<2>(edges3[i]) << '\n';
+            // cout << edges3[i] << ' ' << edges3[i+1] << ' ' << edges3[i+2] << '\n';
+            cliques3.insert(make_tuple(edges3[i], edges3[i+1], edges3[i+2]));
+        }
+        cout << "Total number of 3-cliques: " << cliques3.size() << endl;
+        for (auto x : cliques3)
+        {
+            cout << get<0>(x) << ' ' << get<1>(x) << ' ' << get<2>(x) << '\n';
         }
     }
     // MPI_Gather(edges3_p.data(), chunk_size, MPI_INT, edges3.data(), chunk_size, MPI_INT, 0, MPI_COMM_WORLD);
