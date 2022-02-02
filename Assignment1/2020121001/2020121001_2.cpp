@@ -70,7 +70,6 @@ tuple<int, int, int, int> get_4cliques(int edge1[], int edge2[])
 int main(int argc, char **argv)
 {
     int rank, numprocs, chunk_size;
-
     ifstream in_file;
     ofstream out_file;
     in_file.open(argv[1]);
@@ -94,34 +93,20 @@ int main(int argc, char **argv)
         edges[i] = (int *)malloc(3 * sizeof(int));
 
     vector<int> edges3;
+    vector<int> edges4;
     set<tuple<int, int, int> > cliques3;
-
-    // new int *[num_edges];
-    // for (int i = 0; i < num_edges; ++i)
-    //     edges[i] = new int[2];
-
-    // Edges 3 _ P
-    // int **edges3 =  (int **) malloc(num_edges * sizeof(int *));
-    // for (int i = 0; i < num_edges; ++i)
-    //     edges3[i] = (int *) malloc(3 * sizeof(int));
-    // new int *[100];
-    // for(int i=0; i< num_edges; i++){
-    //     edges3[i] = new int [3];
-    // }
-
-    // int **edges3_p = new int *[100];
-    // for(int i=0; i< num_edges; i++){
-    //     edges3_p[i] = new int [3];
-    // }
+    set<tuple<int, int, int, int> > cliques4;
 
     int *weights = new int[num_edges];
     int *weights3_p = new int[num_edges];
+    int *weights4_p = new int[num_edges];
 
     int three_cliques[4] = {0, 0, 0, 0};
     int four_cliques[7] = {0, 0, 0, 0, 0, 0, 0};
 
     // For reduction
     int total_num_3 = 0;
+    int total_num_4 = 0;
     for (int i = 0; i < num_edges; i++)
     {
         in_file >> edges[i][0] >> edges[i][1] >> weights[i];
@@ -138,6 +123,7 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     vector<int> edges3_p;
+    vector<int> edges4_p;
     if (rank == 0)
     {
         chunk_size = num_edges / numprocs > 4 ? num_edges / numprocs : 4;
@@ -147,7 +133,7 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     double start_time = MPI_Wtime();
     int num_3 = 0;
-
+    int num_4 = 0;
     MPI_Bcast(&chunk_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if ((rank * chunk_size <= num_edges))
     {
@@ -175,12 +161,6 @@ int main(int argc, char **argv)
                         if (cliques3_edges.count(clique_3) == 0)
                         {
                             cliques3_edges.insert(clique_3);
-                            // three_cliques[weights[edge_weight_index] + weights[i] + weights[j]]++;
-                            // Cout edges
-                            cout << "(" << edges[i][0] << "," << edges[i][1] << ") ";
-                            cout << "(" << edges[j][0] << "," << edges[j][1] << ") ";
-                            cout << "(" << *st << "," << *(st + 1) << ") ";
-                            cout << "rank: " << rank << " Individual weights: " << weights[edge_weight_index] << "," << weights[i] << "," << weights[j] << endl;
                             weights3_p[num_3] = weights[edge_weight_index] + weights[i] + weights[j];
                             num_3++;
                         }
@@ -200,23 +180,12 @@ int main(int argc, char **argv)
             num_3++;
             // cout << get<0>(tp) << ' ' << get<1>(tp) << ' ' << get<2>(tp) << '\n';
         }
-        // num_3 = 0;
-
-        // Add cliques3_edges to edges3
-        // for (auto it = cliques3_edges.begin(); it != cliques3_edges.end(); ++it)
-        // {
-        //     edges3_p.push_back(make_tuple(get<0>(*it), get<1>(*it), get<2>(*it)));
-        //     // edges3_p[num_3][0] = get<0>(*it);
-        //     // edges3_p[num_3][1] = get<1>(*it);
-        //     // edges3_p[num_3][2] = get<2>(*it);
-        //     num_3++;
-        // }
         // Print from edges3_p
-        cout << "Vectors: " << endl;
-        for (int i = 0; i < num_3 * 4; i += 4)
-        {
-            cout << edges3_p[i] << ' ' << edges3_p[i + 1] << ' ' << edges3_p[i + 2] << ':' << edges3_p[i + 3] << '\n';
-        }
+        // cout << "Vectors: " << endl;
+        // for (int i = 0; i < num_3 * 4; i += 4)
+        // {
+        //     cout << edges3_p[i] << ' ' << edges3_p[i + 1] << ' ' << edges3_p[i + 2] << ':' << edges3_p[i + 3] << '\n';
+        // }
     }
     else
     {
@@ -226,13 +195,6 @@ int main(int argc, char **argv)
     // TODO: Get num by reducing num_3
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Reduce(&num_3, &total_num_3, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    // if(rank==0){
-    //     // edges3.resize(total_num_3);
-    //     // cout << "Total number of 3-cliques: " << total_num_3 << endl;
-    //     // cout << "Gathering chunk size: " << chunk_size << endl;
-    //     // edges3.resize(total_num_3 * 3);
-    //     // MPI Gather edges3_p vector to edges3
-    // }
     int *counts = new int[numprocs];
     MPI_Gather(&num_3, 1, MPI_INT, counts, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (rank == 0)
@@ -285,10 +247,140 @@ int main(int argc, char **argv)
             out_file << "3 " << i << " " << three_cliques[i] << endl;
         }
     }
-    // MPI_Gather(edges3_p.data(), chunk_size, MPI_INT, edges3.data(), chunk_size, MPI_INT, 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    // For four cliques
+    MPI_Bcast(&tnum, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&weights3[0], tnum, MPI_INT, 0, MPI_COMM_WORLD);
+    int **edges3_cl = (int **)malloc(tnum * sizeof(int *));
+    for (int i = 0; i < tnum; i++)
+        edges3_cl[i] = (int *)malloc(3 * sizeof(int));
+    tnum = 0;
+    for (auto it = cliques3.begin(); it != cliques3.end(); ++it)
+    {
+        edges3_cl[tnum][0] = get<0>(*it);
+        edges3_cl[tnum][1] = get<1>(*it);
+        edges3_cl[tnum][2] = get<2>(*it);
+        tnum++;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+        chunk_size = tnum / numprocs > 4 ? tnum / numprocs : 4;
+    }
+    /*synchronize all processes*/
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Bcast(&chunk_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if ((rank * chunk_size <= tnum))
+    {
+        cout << "rank: " << rank << " chunk: " << chunk_size << endl;
+        vector<int> v(4);
+        vector<int>::iterator it, st;
+        set<tuple<int, int, int, int> > cliques4_edges;
+        int start = rank * chunk_size;
+        chunk_size = (rank + 1) * chunk_size > tnum ? ((rank + 1) * chunk_size) - tnum - 2 : chunk_size;
+        int end = start + chunk_size;
+        for (int i = start; i < end; i++)
+        {
+            for (int j = 0; j < tnum; j++)
+            {
+                it = set_symmetric_difference(edges3_cl[i], edges3_cl[i] + 3, edges3_cl[j], edges3_cl[j] + 3, v.begin());
+                if ((it - v.begin()) == 2)
+                {
+                    st = v.begin();
+                    int edge_weight_index = hasEdge(edges, num_edges, *st, *(st + 1));
+                    it = set_intersection(edges3_cl[i], edges3_cl[i] + 3, edges3_cl[j], edges3_cl[j] + 3, v.begin());
+                    st = v.begin();
+                    int remove_edge_weight_index = hasEdge(edges, num_edges, *st, *(st + 1));
+                    if (edge_weight_index != -1)
+                    {
+                        tuple<int, int, int, int> clique_4 = get_4cliques(edges3_cl[i], edges3_cl[j]);
+                        if (cliques4_edges.count(clique_4) == 0)
+                        {
+                            // cout << "removing weight of " << *st << " " << *(st + 1) << ": " << remove_edge_weight_index << ":" << weights[remove_edge_weight_index] << endl;
+                            // cout << "adding weight: " << edge_weight_index << ":" << weights[edge_weight_index] << endl;
+                            // cout << "Adding clique weight: " << i << ":" << weights3[i] << endl;
+                            // cout << "Adding clique weight: " << j << ":" << weights3[j] << endl;
+                            cliques4_edges.insert(clique_4);
+                            weights4_p[num_4] = weights[edge_weight_index] + weights3[i] + weights3[j] - weights[remove_edge_weight_index];
+                            // cout << weights[edge_weight_index] + weights3[i] + weights3[j] - weights[remove_edge_weight_index] << endl;
+                            num_4++;
+                        }
+                    }
+                }
+            }
+        }
+        cout << "Process: " << rank << " has " << num_4 << " 4-cliques" << endl;
+        num_4 = 0;
+        for (auto x : cliques4_edges)
+        {
+            tuple<int, int, int, int> tp = x;
+            edges4_p.push_back(get<0>(tp));
+            edges4_p.push_back(get<1>(tp));
+            edges4_p.push_back(get<2>(tp));
+            edges4_p.push_back(get<3>(tp));
+            edges4_p.push_back(weights4_p[num_4]);
+            num_4++;
+            // cout << "Rank: " << rank << ":" << get<0>(x) << ' ' << get<1>(x) << ' ' << get<2>(x) << ' ' << get<3>(x) << endl;
+        }
+    }
+    else
+    {
+        num_4 = 0;
+        cout << "Not enough edges for process: " << rank << endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Reduce(&num_4, &total_num_4, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Gather(&num_4, 1, MPI_INT, counts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+        for (int i = 0; i < numprocs; i++)
+        {
+            counts[i] = counts[i] * 5;
+            cout << "Process: " << i << " has " << counts[i] << " counts" << endl;
+        }
+    }
+    // Displacement for the first chunk of data - 0
+    if (rank == 0)
+    {
+        for (int i = 0; i < numprocs; i++)
+            disps[i] = (i > 0) ? (disps[i - 1] + counts[i - 1]) : 0;
+        for (int i = 0; i < numprocs; i++)
+        {
+            cout << "Process: " << i << " has " << disps[i] << " start point" << endl;
+        }
+        edges4 = vector<int>(disps[numprocs - 1] + counts[numprocs - 1]);
+    }
+    MPI_Gatherv(&edges4_p.front(), edges4_p.size(), MPI_INT, &edges4.front(), counts, disps, MPI_INT, 0, MPI_COMM_WORLD);
+    int *weights4 = new int[num_edges];
+    int tnum_4 = 0;
+
+    if (rank == 0)
+    {
+        cout << "Here: " << edges4.size() << endl;
+        for (int i = 0; i < total_num_4 * 5; i += 5)
+        {
+            tuple<int, int, int, int> tp = make_tuple(edges4[i], edges4[i + 1], edges4[i + 2], edges4[i + 3]);
+            if (cliques4.count(tp) == 0)
+            {
+                cliques4.insert(tp);
+                weights4[tnum_4] = edges4[i + 4];
+                four_cliques[weights4[tnum_4]]++;
+                tnum_4++;
+            }
+        }
+        cout << "Total number of 4-cliques: " << cliques4.size() << endl;
+        tnum_4 = 0;
+        for (auto x : cliques4)
+        {
+            cout << get<0>(x) << ' ' << get<1>(x) << ' ' << get<2>(x) << " " << get<3>(x) << " " << weights4[tnum_4] << endl;
+            tnum_4++;
+        }
+        for (int i = 0; i < 7; i++)
+        {
+            cout << "4 " << i << " " << four_cliques[i] << endl;
+            out_file << "4 " << i << " " << four_cliques[i] << endl;
+        }
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
     double end_time = MPI_Wtime() - start_time;
