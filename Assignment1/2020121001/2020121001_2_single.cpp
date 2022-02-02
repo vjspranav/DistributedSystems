@@ -7,16 +7,6 @@
 
 using namespace std;
 
-// Hash function
-struct hashFunction
-{
-    size_t operator()(const pair<int,
-                                 int> &x) const
-    {
-        return x.first ^ x.second;
-    }
-};
-
 int hasEdge(int **arr, int num_edges, int x, int y)
 {
     for (int i = 0; i < num_edges; i++)
@@ -70,10 +60,8 @@ tuple<int, int, int, int> get_4cliques(int edge1[], int edge2[])
         return make_tuple(k, x, y, z);
     else if (k < y)
         return make_tuple(x, k, y, z);
-    else if (k < z)
-        return make_tuple(x, y, k, z);
-    else
-        return make_tuple(x, y, z, k);
+    else if (k < z) return make_tuple(x, y, k, z);
+    else return make_tuple(x, y, z, k);
 }
 
 int main(int argc, char **argv)
