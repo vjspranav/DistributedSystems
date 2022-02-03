@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     // Check if number is prime
     for (long long int i = start_num; i <= end_num; i++)
     {
-        if (data % i == 0 && i != 1)
+        if (data % i == 0 && i != 1 && i != data)
         {
             cout << "Divisible by " << i << endl;
             my_prime = 1;
