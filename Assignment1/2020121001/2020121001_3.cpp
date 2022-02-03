@@ -39,6 +39,26 @@ int main(int argc, char **argv)
             in_file >> a[i][j];
     in_file.close();
     double *x = new double[n];
+    // Remove all the zeroes on the diagonal of the matrix
+    // Through interchanging the rows
+    // or adding values of other rows to the current row
+    // for (int l = 0; l < n; l++)
+    // {
+    //     for (int m = l + 1; m < n; m++)
+    //     {
+    //         if (a[l][l] == 0)
+    //         {
+    //             cout << "Replacing row " << l << " with row " << m << endl;
+    //             for (int k = 0; k < n + 1; k++)
+    //             {
+    //                 double temp = a[l][k];
+    //                 a[l][k] = a[m][k];
+    //                 a[m][k] = temp;
+    //             }
+    //         }
+    //     }
+    // }
+
     // initiate MPI
     MPI_Init(&argc, &argv);
     // double **a_local = new double *[n];
@@ -88,8 +108,8 @@ int main(int argc, char **argv)
                 tnum++;
             }
         }
-        // Cout ector data 4 at a time
-        cout << "Vecor: " << tnum << endl;
+        // Cout vector data 4 at a time
+        cout << "Vector: " << tnum << endl;
         for (int j = 0; j < tnum * 4; j++)
         {
             cout << a_local[j] << " ";
@@ -164,6 +184,22 @@ int main(int argc, char **argv)
                 a[j][k] = av[tnum++];
             }
         }
+        // for (int l = i; l < n; l++)
+        // {
+        //     for (int m = l + 1; m < n; m++)
+        //     {
+        //         if (a[l][l] == 0)
+        //         {
+        //             cout << "Replacing row " << l << " with row " << m << endl;
+        //             for (int k = 0; k < n + 1; k++)
+        //             {
+        //                 double temp = a[l][k];
+        //                 a[l][k] = a[m][k];
+        //                 a[m][k] = temp;
+        //             }
+        //         }
+        //     }
+        // }
         MPI_Barrier(MPI_COMM_WORLD);
         for (int j = 0; j < n; j++)
         {
