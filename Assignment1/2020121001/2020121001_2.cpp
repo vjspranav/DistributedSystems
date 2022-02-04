@@ -265,7 +265,7 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0)
     {
-        chunk_size = tnum / numprocs > 4 ? tnum / numprocs : 4;
+        chunk_size = tnum / numprocs > 1 ? tnum / numprocs : 1;
     }
     /*synchronize all processes*/
     MPI_Barrier(MPI_COMM_WORLD);
@@ -277,8 +277,8 @@ int main(int argc, char **argv)
         vector<int>::iterator it, st;
         set<tuple<int, int, int, int> > cliques4_edges;
         int start = rank * chunk_size;
-        chunk_size = (rank + 1) * chunk_size > tnum ? ((rank + 1) * chunk_size) - tnum - 2 : chunk_size;
-        int end = start + chunk_size;
+        chunk_size = (rank + 1) * chunk_size > tnum ? ((rank + 1) * chunk_size) - tnum - 1 : chunk_size;
+        int end = start + chunk_size - 1;
         for (int i = start; i < end; i++)
         {
             for (int j = 0; j < tnum; j++)
