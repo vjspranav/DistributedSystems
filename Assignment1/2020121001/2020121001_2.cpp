@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     int num_3 = 0;
     int num_4 = 0;
     MPI_Bcast(&chunk_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    if ((rank * chunk_size <= num_edges))
+    if (((rank) * chunk_size) <= num_edges)
     {
         cout << "rank: " << rank << " chunk: " << chunk_size << endl;
         set<tuple<int, int, int> > cliques3_edges;
@@ -143,8 +143,9 @@ int main(int argc, char **argv)
         vector<int>::iterator it, st;
         int start = rank * chunk_size - 1;
         start = start < 0 ? 0 : start;
-        chunk_size = (rank + 1) * chunk_size > num_edges ? ((rank + 1) * chunk_size) - num_edges - 2 : chunk_size;
+        chunk_size = (rank + 1) * chunk_size > num_edges ? ((rank + 1) * chunk_size) - num_edges - 2: chunk_size;
         int end = start + chunk_size - 1;
+        end = end > num_edges ? num_edges - 1 : end;
         cout << "rank: " << rank << " start: " << start << " end: " << end << endl;
         for (int i = start; i < end; i++)
         {
@@ -162,6 +163,11 @@ int main(int argc, char **argv)
                         {
                             cliques3_edges.insert(clique_3);
                             weights3_p[num_3] = weights[edge_weight_index] + weights[i] + weights[j];
+                            cout << "rank: " << rank << " clique3: " << get<0>(clique_3) << " " << get<1>(clique_3) << " " << get<2>(clique_3) << " weight: " << weights3_p[num_3] << endl;
+                            edges3_p.push_back(get<0>(clique_3));
+                            edges3_p.push_back(get<1>(clique_3));
+                            edges3_p.push_back(get<2>(clique_3));
+                            edges3_p.push_back(weights3_p[num_3]);
                             num_3++;
                         }
                     }
@@ -169,23 +175,23 @@ int main(int argc, char **argv)
             }
         }
         cout << "Process: " << rank << " has " << num_3 << " 3-cliques" << endl;
-        num_3 = 0;
-        for (auto x : cliques3_edges)
-        {
-            tuple<int, int, int> tp = x;
-            edges3_p.push_back(get<0>(tp));
-            edges3_p.push_back(get<1>(tp));
-            edges3_p.push_back(get<2>(tp));
-            edges3_p.push_back(weights3_p[num_3]);
-            num_3++;
-            // cout << get<0>(tp) << ' ' << get<1>(tp) << ' ' << get<2>(tp) << '\n';
-        }
-        // Print from edges3_p
-        // cout << "Vectors: " << endl;
-        // for (int i = 0; i < num_3 * 4; i += 4)
+        // num_3 = 0;
+        // for (auto x : cliques3_edges)
         // {
-        //     cout << edges3_p[i] << ' ' << edges3_p[i + 1] << ' ' << edges3_p[i + 2] << ':' << edges3_p[i + 3] << '\n';
+        //     tuple<int, int, int> tp = x;
+        //     edges3_p.push_back(get<0>(tp));
+        //     edges3_p.push_back(get<1>(tp));
+        //     edges3_p.push_back(get<2>(tp));
+        //     edges3_p.push_back(weights3_p[num_3]);
+        //     num_3++;
+        //     // cout << get<0>(tp) << ' ' << get<1>(tp) << ' ' << get<2>(tp) << '\n';
         // }
+        // Print from edges3_p
+        cout << "Vectors: " << endl;
+        for (int i = 0; i < num_3 * 4; i += 4)
+        {
+            cout << edges3_p[i] << ' ' << edges3_p[i + 1] << ' ' << edges3_p[i + 2] << ':' << edges3_p[i + 3] << '\n';
+        }
     }
     else
     {
@@ -215,13 +221,19 @@ int main(int argc, char **argv)
         {
             cout << "Process: " << i << " has " << disps[i] << " start point" << endl;
         }
-        edges3 = vector<int>(disps[numprocs - 1] + counts[numprocs - 1]);
+        // edges3 = vector<int>(disps[numprocs - 1] + counts[numprocs - 1]);
+        edges3.resize(disps[numprocs - 1] + counts[numprocs - 1]);
     }
     MPI_Gatherv(&edges3_p.front(), edges3_p.size(), MPI_INT, &edges3.front(), counts, disps, MPI_INT, 0, MPI_COMM_WORLD);
     int tnum = 0;
     int *weights3 = new int[num_edges];
     if (rank == 0)
     {
+        // Cout all edges
+        for (int i = 0; i < edges3.size(); i += 4)
+        {
+            cout << edges3[i] << ' ' << edges3[i + 1] << ' ' << edges3[i + 2] << ':' << edges3[i + 3] << '\n';
+        }
         cout << "Here: " << edges3.size() << endl;
         for (int i = 0; i < total_num_3 * 4; i += 4)
         {
@@ -277,8 +289,8 @@ int main(int argc, char **argv)
         vector<int>::iterator it, st;
         set<tuple<int, int, int, int> > cliques4_edges;
         int start = rank * chunk_size;
-        chunk_size = (rank + 1) * chunk_size > tnum ? ((rank + 1) * chunk_size) - tnum - 1 : chunk_size;
-        int end = start + chunk_size - 1;
+        chunk_size = (rank + 1) * chunk_size > tnum ? ((rank + 1) * chunk_size) - tnum - 2 : chunk_size;
+        int end = start + chunk_size ;
         for (int i = start; i < end; i++)
         {
             for (int j = 0; j < tnum; j++)
