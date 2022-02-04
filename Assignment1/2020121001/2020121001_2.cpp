@@ -265,7 +265,7 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0)
     {
-        chunk_size = tnum / numprocs > 1 ? tnum / numprocs : 1;
+        chunk_size = tnum / numprocs > 4 ? tnum / numprocs : 4;
     }
     /*synchronize all processes*/
     MPI_Barrier(MPI_COMM_WORLD);

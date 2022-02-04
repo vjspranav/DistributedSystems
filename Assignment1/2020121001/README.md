@@ -24,3 +24,7 @@ For calculating cliques we use the recursive method.
 > This has a much better time complexity than brute force.
 
 ## Gaussian Elimination
+For gaussian elimination we first take the input of the adjoint matrix
+* We then create the gaussian (i.e. upper triangular matrix)
+* We try to paraalize this step by splitting all rows across processes for each parent, this ensures all rows are calculated at the same time.
+* Then we re create the array and repeat the step till parent is the last row.
