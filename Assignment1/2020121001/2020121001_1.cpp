@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     }
     MPI_Bcast(&num_per_proc, 1, MPI_LONG_LONG_INT, root, MPI_COMM_WORLD);
     long long int start_num = rank * num_per_proc;
+    start_num = start_num == 0 ? 1 : start_num;
     long long int end_num = start_num + num_per_proc > sqrt_num ? sqrt_num : start_num + num_per_proc;
     int my_prime = 0;
     // Check if number is prime
