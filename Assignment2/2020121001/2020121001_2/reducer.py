@@ -25,8 +25,10 @@ for line in sys.stdin:
             break
     if not added:
         components.append({u, v})
-        all_nodes.remove(u)
-        all_nodes.remove(v)
+        if u in all_nodes:
+            all_nodes.remove(u)
+        if v in all_nodes:
+            all_nodes.remove(v)
 
 for component in components:
     if len(component) > 0:
